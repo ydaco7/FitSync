@@ -1,0 +1,72 @@
+.Home{
+    display: flex;
+    flex-direction: column;
+    min-height: 80vh;
+    background-image: url("/public/img/gym_home1.jpg");
+    background-size: cover;
+    background-position: center;
+
+    /* romper el contenedor centrado para ocupar todo el viewport */
+    
+    width: 100%;
+    box-sizing: border-box;
+    align-items: stretch;
+    padding: 2rem;
+    
+}
+
+/* Contenedor interno para el texto */
+.Home-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    /* Evita que los hijos (por ejemplo el botón) se estiren al 100% ancho */
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 3rem;
+}
+
+.Home-content h1 {
+    color: #ffffff;
+    font-size: 3rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.Home-content p {
+    color: #e6e6e6;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    max-width: 70ch;
+}
+
+button {
+    /* Estilos base del botón: tamaño según contenido, no ocupar todo el ancho */
+    align-self: flex-start;
+    padding: 0.8rem 1.2rem;
+    background: #ff7f50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition:  220ms ease, box-shadow 220ms ease, transform 160ms ease;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+
+button:hover,
+button:focus {
+    background: #ff946b; /* color más claro al pasar */
+    box-shadow: 0 12px 30px rgba(0,0,0,0.28), 0 4px 12px rgba(255,127,80,0.08);
+    transform: translateY(-3px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Mejor accesibilidad en focus (teclado) */
+button:focus-visible {
+    outline: 3px solid rgba(255,127,80,0.18);
+    outline-offset: 2px;
+}

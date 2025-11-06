@@ -1,0 +1,95 @@
+.services-section-container {
+  background-color: var(--principal); 
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.services-header{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+/* 2. Encabezado */
+
+.services-subtitle {
+  color: var(--color-especial); /* Mantiene el naranja como color de acento */
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.services-main-title {
+  /* FUERZA el color oscuro para que sea visible sobre el fondo blanco */
+  color: var(--text-principal); 
+  font-size: 36px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 60px;
+}
+
+/* 3. Grid de Tarjetas: Aseguramos que no tenga un fondo oscuro por sí mismo */
+.services-cards-grid {
+  background-color: transparent; /* Fondo transparente o blanco si fuera necesario */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* 4. Tarjeta Individual */
+
+.service-card {
+  background-color: transparent; /* Fondo de tarjeta transparente o blanco */
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px; 
+  padding: 20px 10px;
+}
+
+.service-icon {
+  color: var(--color-especial); /* FUERZA el naranja para los íconos */
+  font-size: 50px;
+  margin-bottom: 20px;
+}
+
+.service-title {
+  /* FUERZA el color oscuro para los títulos */
+  color: var(--text-principal); 
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.service-description {
+  /* FUERZA el color gris oscuro para las descripciones */
+  color: var(--color-gray); 
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 900px) {
+    .services-cards-grid {
+        flex-wrap: wrap;
+    }
+    .service-card {
+        flex: 0 0 45%;
+        margin-bottom: 30px;
+    }
+}
+
+@media (max-width: 600px) {
+    .services-cards-grid {
+        flex-direction: column;
+    }
+    .service-card {
+        max-width: 100%;
+    }
+}

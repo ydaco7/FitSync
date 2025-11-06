@@ -1,0 +1,163 @@
+/* Color estimado para el fondo: un azul oscuro / azul verdoso */
+:root {
+    --footer-bg:#000000 ;
+    --footer-text-light: #ffffff;
+    --footer-text-titles: #ff8c42; /* Color un poco más claro para los títulos */
+}
+
+/* --- Estilos Generales del Footer --- */
+.site-footer {
+    background-color: var(--footer-bg);
+    color: var(--footer-text-light);
+    font-family: Arial, sans-serif; /* Reemplazar con la fuente real si se conoce */
+    padding-top: 50px;
+}
+
+/* Contenedor principal de las 4 columnas */
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 50px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap; /* Permite que las columnas se apilen en pantallas pequeñas */
+}
+
+/* Estilo para cada columna */
+.footer-column {
+    flex-basis: 22%; /* Un poco menos de 25% para dejar espacio entre ellas */
+    padding: 0 15px;
+    box-sizing: border-box;
+    min-width: 150px;
+}
+
+/* --- Estilos de Títulos y Listas --- */
+.column-title {
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+    color: var(--footer-text-titles);
+    text-transform: uppercase;
+}
+
+.site-footer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.site-footer ul li {
+    margin-bottom: 8px;
+}
+
+.site-footer ul li a {
+    color: inherit;
+    text-decoration: none;
+    font-size: 0.9em;
+}
+
+.site-footer ul li a:hover {
+    text-decoration: underline;
+}
+
+/* --- Columna 1: Brand/Logo --- */
+.brand-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.logo-icon{
+    color: #ff8c42;
+}
+
+.logo-icon {
+    background-color: var(--footer-text-light);
+    color: var(--footer-bg);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 0.8em;
+    margin-right: 10px;
+}
+
+.logo-text {
+    line-height: 1.2;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+/* --- Columna 4: Iconos Sociales --- */
+.social-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px; /* Espaciado entre los iconos */
+}
+
+.social-icons a {
+    color: inherit;
+    font-size: 20px; /* Tamaño del icono */
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.social-icons a:hover {
+    color: var(--footer-text-titles);
+}
+
+/* --- Barra Inferior / Copyright --- */
+.footer-bottom {
+    border-top: 1px solid rgba(235, 7, 7, 0.1); /* Separador sutil */
+    text-align: center;
+    padding: 15px 20px;
+    font-size: 0.75em;
+    line-height: 1.5;
+}
+
+.footer-bottom p {
+    margin: 5px 0;
+}
+
+.footer-bottom a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.footer-bottom a:hover {
+    text-decoration: underline;
+}
+
+/* --- Adaptabilidad (Media Queries) --- */
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column; /* Apilar columnas verticalmente */
+        padding-bottom: 30px;
+    }
+
+    .footer-column {
+        flex-basis: 100%;
+        margin-bottom: 30px;
+        padding: 0;
+    }
+
+    .column-title {
+        margin-bottom: 15px;
+    }
+}
+
+/* Ajuste para pantallas medianas (ej. tabletas) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .footer-column {
+        flex-basis: 48%; /* Dos columnas por fila */
+        margin-bottom: 30px;
+    }
+    
+    /* Para agrupar las columnas en dos filas de dos */
+    .footer-column:nth-child(2) { margin-left: auto; }
+    .footer-column:nth-child(4) { margin-left: auto; }
+}
