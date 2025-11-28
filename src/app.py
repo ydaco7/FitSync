@@ -10,6 +10,7 @@ from routes.get_users import get_users
 from routes.login import login
 from routes.payment_routes import plans_bp, create_payment_bp, user_payments_bp, exchange_bp, methods_bp, historial_bp
 from keys import supabase
+<<<<<<< HEAD
 import os
 from routes.logout import logout_bp
 from keys import supabase
@@ -20,11 +21,21 @@ load_dotenv()
 
 
 
+=======
+from routes.logout import logout_bp
+from routes.gallery import gallery
+from datetime import timedelta 
+
+>>>>>>> 667904170885514b1450625cbfd7c3c324bd0b02
 app = Flask(__name__)
 CORS(app)
 app.config['JWT_SECRET_KEY'] = 'tu_secreto_super_seguro'
 jwt = JWTManager(app)
 
+<<<<<<< HEAD
+=======
+load_dotenv()
+>>>>>>> 667904170885514b1450625cbfd7c3c324bd0b02
 
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
@@ -36,7 +47,11 @@ app.register_blueprint(Bp_modify, url_prefix='/api/user')
 app.register_blueprint(sign_up, url_prefix='/signup')
 app.register_blueprint(delete_user, url_prefix='/user/delete')
 app.register_blueprint(get_users, url_prefix='/user')
+<<<<<<< HEAD
 app.register_blueprint(login, url_prefix='/login')
+=======
+app.register_blueprint(login, url_prefix='/Login')
+>>>>>>> 667904170885514b1450625cbfd7c3c324bd0b02
 app.register_blueprint(plans_bp, url_prefix='/api/plans') 
 app.register_blueprint(create_payment_bp, url_prefix='/api/payments')
 app.register_blueprint(user_payments_bp, url_prefix='/api/my-payments')
@@ -45,6 +60,10 @@ app.register_blueprint(methods_bp, url_prefix='/api/methods')
 app.register_blueprint(historial_bp, url_prefix='/historial')
 
 app.register_blueprint(logout_bp, url_prefix='/logout')
+<<<<<<< HEAD
+=======
+app.register_blueprint(gallery, url_prefix='/api/gallery')
+>>>>>>> 667904170885514b1450625cbfd7c3c324bd0b02
 
 @app.route('/api/users', methods=['GET'])
 def get_all_users():
@@ -61,6 +80,39 @@ def get_all_users():
         print(f"ERROR DE SUPABASE: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+
+
+@app.route('/api/trainer', methods = ['GET'])
+def get_trainer():
+    try:
+        response = supabase.table('trainer').select('*').execute()
+        trainer_data = response.data
+        
+        if trainer_data:
+            return jsonify(trainer_data), 200
+        else:
+            return jsonify({"message": "No trainers found"}), 404
+
+    except Exception as e:
+        print(f"ERROR DE SUPABASE: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+
+@app.route('/api/nutritionist', methods = ['GET'])
+def get_nutritionist():
+    try:
+        response = supabase.table('nutritionist').select('*').execute()
+        nutritionist_data = response.data
+        
+        if nutritionist_data:
+            return jsonify(nutritionist_data), 200
+        else:
+            return jsonify({"message": "No nutritionists found"}), 404
+
+    except Exception as e:
+        print(f"ERROR DE SUPABASE: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 
 
 if __name__ == '__main__':
