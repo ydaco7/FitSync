@@ -3,33 +3,23 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from dotenv import load_dotenv
-
 from routes.Bp_modify import Bp_modify
 from routes.sign_up import sign_up
 from routes.delete_user import delete_user
 from routes.get_users import get_users
 from routes.login import login
-from routes.payment_routes import plans_bp, create_payment_bp, user_payments_bp, exchange_bp, methods_bp
+from routes.payment_routes import plans_bp, create_payment_bp, user_payments_bp, exchange_bp, methods_bp, historial_bp
 from keys import supabase
-from dotenv import load_dotenv
-import os
 from routes.logout import logout_bp
 from routes.gallery import gallery
-
-
-from keys import supabase
-
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from datetime import timedelta 
-
-
-load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 app.config['JWT_SECRET_KEY'] = 'tu_secreto_super_seguro'
 jwt = JWTManager(app)
 
+load_dotenv()
 
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
@@ -45,8 +35,10 @@ app.register_blueprint(login, url_prefix='/Login')
 app.register_blueprint(plans_bp, url_prefix='/api/plans') 
 app.register_blueprint(create_payment_bp, url_prefix='/api/payments')
 app.register_blueprint(user_payments_bp, url_prefix='/api/my-payments')
-app.register_blueprint(exchange_bp, url_prefix='/api/exchange')
 app.register_blueprint(methods_bp, url_prefix='/api/methods')
+
+app.register_blueprint(historial_bp, url_prefix='/historial')
+
 app.register_blueprint(logout_bp, url_prefix='/logout')
 app.register_blueprint(gallery, url_prefix='/api/gallery')
 
@@ -82,6 +74,22 @@ def get_trainer():
         print(f"ERROR DE SUPABASE: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+
+
+@app.route('/api/nutritionist', methods = ['GET'])
+def get_nutritionist():
+    try:
+        response = supabase.table('nutritionist').select('*').execute()
+        nutritionist_data = response.data
+        
+        if nutritionist_data:
+            return jsonify(nutritionist_data), 200
+        else:
+            return jsonify({"message": "No nutritionists found"}), 404
+
+    except Exception as e:
+        print(f"ERROR DE SUPABASE: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 
 
 if __name__ == '__main__':
