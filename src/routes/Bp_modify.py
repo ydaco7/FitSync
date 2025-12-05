@@ -1,9 +1,9 @@
 from flask import jsonify, request, Blueprint
 from keys import supabase
-
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
-
 from werkzeug.security import generate_password_hash
+from controller.validators import validate_password, validate_phone_number
+
 
 Bp_modify = Blueprint('Bp_modify', __name__)
 
@@ -30,13 +30,13 @@ def update_user(user_id):
             if key in allow_update:
                 
                 if key == 'password_encrypted':
-                    # value es el texto plano de la contraseña. Lo hasheamos.
-                    # El hash resultante se guarda en la variable password_encrypted
+                    is_valid, password_message = validate_password(value)
+                    if not is_valid:
+                        return jsonify({"message": password_message}), 400
                     hashed_password = generate_password_hash(value)
                     update_data[key] = hashed_password
                 
                 else:
-                    # Para todos los demás campos permitidos (como 'number'), se guarda el valor directamente
                     update_data[key] = value
 
         if not update_data:
