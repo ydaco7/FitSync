@@ -25,8 +25,6 @@ export function Login({onLogin}) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-        //body: JSON.stringify({ email, password_encrypted: password })
-        //body: JSON.stringify({ email, password: password })
       })
 
       const text = await res.text()

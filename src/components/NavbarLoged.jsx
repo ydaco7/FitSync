@@ -63,9 +63,14 @@ export default function NavbarLoged() {
         <span className="logo-text">FITCLUB</span>
         </NavLink>
       </div>
+      <div className='navbar-menu'>
+        <button className='menu-mobile' onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          { isMenuOpen ? '≡' : 'X' }
+        </button>
+      </div>
 
       <div className="navbar-right menu-profile-container">        
-          <div className={`navbar-links ${isMenuOpen ? 'open' : ''}`}>
+          <div className={`navbar-links ${isMenuOpen ? '' : 'open'}`}>
             <NavLink to="/home" className="nav-link">
               <FaHome />
               <span>Home</span>

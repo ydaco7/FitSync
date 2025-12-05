@@ -31,36 +31,25 @@ def validate_password(password_plaintext):
 
 
 def validate_phone_number(number):
-    
     if not number or not isinstance(number, str):
         return False, "El número de teléfono es requerido"
     
-    # Eliminar espacios en blanco al inicio y final
     number = number.strip()
     
-    # Validar que solo contenga números
     if not number.isdigit():
         return False, "El número de teléfono solo debe contener dígitos del 0 al 9"
     
-   
-    
-    # Validar prefijos permitidos
     valid_prefixes = ['0414', '0424', '0416', '0412', '0426']
-    
-    # Verificar si el número comienza con algún prefijo válido
     has_valid_prefix = False
     for prefix in valid_prefixes:
         if number.startswith(prefix):
             has_valid_prefix = True
             break
-    
+
     if not has_valid_prefix:
         return False, f"El número debe comenzar con uno de los prefijos: {', '.join(valid_prefixes)}"
-    
-    # Validar longitud específica por prefijo (todos deberían tener 11 dígitos)
     if len(number) != 11:
         return False, f"El número con prefijo {number[:4]} debe tener exactamente 11 dígitos"
-    
     return True, "Número de teléfono válido"
 
 @sign_up.route('/', methods=['POST'])
@@ -99,7 +88,6 @@ def signnup():
         existing_users = check_response.data
         if existing_users:
             existing_user = existing_users[0]
-            # Comprobamos exactamente que campo existe
             if existing_user.get('email') == email:
                 return jsonify({"message": "El email ya está registrado"}), 409
 
