@@ -20,6 +20,7 @@ app = Flask(__name__)
 CORS(app)
 app.config['JWT_SECRET_KEY'] = 'tu_secreto_super_seguro'
 app.config['JWT_TOKEN_LOCATION'] = ['headers', 'json']
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 jwt = JWTManager(app)
 
 
