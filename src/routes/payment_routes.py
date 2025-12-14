@@ -7,13 +7,10 @@ from paypalhttp import HttpError
 from datetime import datetime, date
 from .payments import PaymentService
 from .historial_payments import payment_service as historial_service
-from flask import Blueprint
-
 
 payment_service = PaymentService()
 
-
-
+# Definir blueprints
 plans_bp = Blueprint('plans', __name__)
 create_payment_bp = Blueprint('create_payment', __name__)
 user_payments_bp = Blueprint('user_payments', __name__)
@@ -21,7 +18,7 @@ exchange_bp = Blueprint('exchange', __name__)
 methods_bp = Blueprint('methods', __name__)
 historial_bp = Blueprint('historial', __name__)
 payment_bp = Blueprint('payment', __name__)
-
+verify_and_upgrade_role_bp = Blueprint('verify_and_upgrade_role', __name__)
 
 # --- ENDPOINTS PÚBLICOS ---
 
@@ -31,13 +28,11 @@ def get_plans():
     try:
         response = supabase.table('subscription_plans').select('*').eq('active', True).execute()
         plans = response.data or []
-        # Calcula el precio en BSD
         for plan in plans:
             plan['price_bsd'] = payment_service.calculate_bsd_price(plan['price_usd'])
         return jsonify(plans), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @methods_bp.route('/', methods=['GET'])
 def get_payment_methods():
@@ -47,56 +42,127 @@ def get_payment_methods():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-
-
 # --- ENDPOINTS PRIVADOS (Requieren JWT) ---
 
 @create_payment_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_order():
-    # OBTENER ID NUMÉRICO del usuario desde JWT
-    identity = get_jwt_identity()
-    print(f"DEBUG JWT Identity: {identity}")  # ← Temporal para debug
-    
-    # Si identity es directamente el id_user (int), úsalo
-    if isinstance(identity, int):
-        user_id = identity
-    # Si identity es un dict con id_user o id
-    elif isinstance(identity, dict):
-        user_id = identity.get('id_user') or identity.get('id')
-        if not user_id:
-            return jsonify({"error": "JWT no contiene id_user válido"}), 401
-    # Si identity es email (str), buscar ID numérico en DB
-    elif isinstance(identity, str) and '@' in identity:
-        user_resp = supabase.table('User').select('id_user').eq('email', identity).single().execute()
-        if not user_resp.data:
-            return jsonify({"error": "Usuario no encontrado"}), 404
-        user_id = user_resp.data['id_user']
-    else:
-        return jsonify({"error": "Formato de JWT inválido"}), 401
-    
-    print(f"DEBUG User ID usado: {user_id} (type: {type(user_id)})")  # ← Temporal
-    
+    current_user_id = get_jwt_identity()
     data = request.get_json()
+    
     if not data:
         return jsonify({"error": "JSON body required"}), 400
+    
+    # Datos que recibe del frontend
+    plan_name = data.get('plan')
+    price = data.get('price')
+    method_slug = data.get('method')
+    details = data.get('details', {})
+    
+    print(f"📦 DEBUG Datos recibidos: plan='{plan_name}', price={price}, method='{method_slug}'")
+    
+    # Mapear 'card' a un método existente en la BD
+    # Si estás usando tarjeta, mapeamos a 'PayPal' o creamos un método nuevo
+    method_mapping = {
+        'card': 'PayPal',  # o 'Tarjeta de Crédito' si tienes ese método
+        'paypal': 'PayPal',
+        'zelle': 'Zelle',
+        'movil': 'Pago Móvil',
+        'cash': 'Efectivo USD',
+        'binance': 'Binance',
+        'bank_transfer': 'Transferencia Bancaria'
+    }
+    
+    method_slug_db = method_mapping.get(method_slug, method_slug)
+    
+    # Para tarjetas simuladas, registrar en la BD como 'PayPal' o crear nuevo método
+    if method_slug == 'card':
+        print(f"💳 Pago con tarjeta simulada. Detalles: {details}")
+        # Marcar como simulado
+        details['simulated'] = True
+        details['card_last4'] = details.get('last4', '')
+        details['card_type'] = details.get('cardType', '')
         
-    plan_id = data.get('plan_id')
-    payment_method_id = data.get('payment_method_id')
+        # Crear ID de transacción simulado si no viene
+        if 'transactionId' not in details:
+            details['transactionId'] = f"CARD-SIM-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
     
-    if not plan_id or not payment_method_id:
-        return jsonify({"error": "Missing plan_id or payment_method_id"}), 400
+    # Continuar con el procesamiento normal...
+    # (tu código existente para buscar plan y método)
     
-    user_agent = request.headers.get('User-Agent')
-    
-    result, status = payment_service.create_payment_intent(
-        user_id=user_id,  # ← Ahora es SIEMPRE INTEGER
-        plan_id=plan_id,
-        payment_method_id=payment_method_id,
-        user_agent=user_agent
-    )
-    return jsonify(result), status
+    try:
+        # 1. Buscar el plan
+        plan_resp = supabase.table('subscription_plans')\
+            .select('id, name, price_usd, duration_days')\
+            .eq('name', plan_name)\
+            .eq('price_usd', float(price))\
+            .execute()
+        
+        if not plan_resp.data:
+            return jsonify({"error": f"Plan '{plan_name}' no encontrado"}), 404
+        
+        plan = plan_resp.data[0]
+        plan_id = plan['id']
+        
+        # 2. Buscar método de pago
+        method_resp = supabase.table('payment_methods')\
+            .select('id, name')\
+            .ilike('name', f'%{method_slug_db}%')\
+            .execute()
+        
+        if not method_resp.data:
+            # Si no existe el método, crear uno para tarjetas
+            if method_slug == 'card':
+                # Insertar método 'Tarjeta de Crédito' si no existe
+                new_method = supabase.table('payment_methods').insert({
+                    'name': 'Tarjeta de Crédito',
+                    'currency': 'USD',
+                    'active': True
+                }).execute()
+                
+                if new_method.data:
+                    payment_method_id = new_method.data[0]['id']
+                else:
+                    # Fallback a PayPal
+                    method_resp = supabase.table('payment_methods')\
+                        .select('id')\
+                        .ilike('name', '%PayPal%')\
+                        .execute()
+                    payment_method_id = method_resp.data[0]['id']
+            else:
+                return jsonify({"error": f"Método de pago no encontrado"}), 404
+        else:
+            payment_method_id = method_resp.data[0]['id']
+        
+        # 3. Crear el pago (simulado para tarjetas)
+        user_ip = request.remote_addr
+        user_agent = request.headers.get('User-Agent')
+        
+        result, status = payment_service.create_payment_intent(
+            user_id=current_user_id,
+            plan_id=plan_id,
+            payment_method_id=payment_method_id,
+            ip_address=user_ip,
+            user_agent=user_agent
+        )
+        
+        # Agregar detalles de tarjeta si es simulado
+        if method_slug == 'card' and details.get('simulated'):
+            result['simulated'] = True
+            result['card_details'] = {
+                'last4': details.get('last4', ''),
+                'type': details.get('cardType', ''),
+                'transaction_id': details.get('transactionId', '')
+            }
+        
+        
+        return jsonify(result), status
+        
+    except Exception as e:
+        print(f"❌ ERROR en create_order: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
 @user_payments_bp.route('/', methods=['GET'])
 @jwt_required()
@@ -112,65 +178,108 @@ def get_user_payments():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-@user_payments_bp.route('/verify', methods=['POST'])
+@verify_and_upgrade_role_bp.route('/<int:user_id>', methods=['PUT'])  # Cambia a int
 @jwt_required()
-def verify_and_upgrade_role():
-    """Verifica si el usuario (pasado en body o token) tiene un pago completado
-    y en caso afirmativo actualiza su rol (`id_rol`) a 2.
-    Request JSON: { "user_id": "<id_user>" } (opcional; si no viene se usa el token)
+def verify_and_upgrade_role(user_id):
+    """
+    Verifica si el usuario tiene pago completado y actualiza su rol a 2 (usuario pago)
+    user_id viene en la URL: /api/verify/25
     """
     try:
-        body = request.get_json() or {}
-        user_id = body.get('user_id') or get_jwt_identity()
-
-        if not user_id:
-            return jsonify({"error": "user_id required or present in JWT"}), 400
-
-      
+        print(f"=== DEBUG VERIFY ROLE ===")
+        print(f"User ID desde URL: {user_id} (type: {type(user_id)})")
+        
+        # El user_id ya viene de la URL, no necesitamos body
+        current_user_jwt = get_jwt_identity()
+        print(f"JWT Identity: {current_user_jwt}")
+        
+        # Opcional: verificar que el JWT coincida con el user_id solicitado
+        # Pero depende de qué guardes en el JWT
+        
+        # Buscar pagos completados
         resp = supabase.table('payments')\
             .select('*')\
             .eq('id_user', user_id)\
             .eq('status', 'completed')\
             .limit(1)\
             .execute()
-
+        
+        print(f"Resultado búsqueda pagos: {resp.data}")
+        
         payments = getattr(resp, 'data', None) or []
+        
         if not payments:
-            return jsonify({"success": False, "message": "No completed payments found for user"}), 404
-
-        # Actualizar rol del usuario a 2
-        upd = supabase.table('User').update({'id_rol': 2}).eq('id_user', user_id).execute()
-        return jsonify({"success": True, "message": "User role updated to paid (id_rol=2)", "updated": getattr(upd, 'data', None)}), 200
-
+            return jsonify({
+                "success": False, 
+                "message": "No hay pagos completados para este usuario",
+                "debug": {"user_id": user_id, "payments_count": 0}
+            }), 404
+        
+        payment = payments[0]
+        print(f"Pago encontrado: ID={payment.get('id')}, Fecha={payment.get('payment_date')}")
+        
+        # Validar fecha de expiración
+        expiration_date = payment.get('expiration_date')
+        if expiration_date:
+            try:
+                from datetime import datetime, date
+                # Manejar diferentes formatos de fecha
+                if 'Z' in expiration_date:
+                    exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00')).date()
+                else:
+                    exp_date = datetime.fromisoformat(expiration_date).date()
+                    
+                today = date.today()
+                print(f"Fecha expiración: {exp_date}, Hoy: {today}")
+                
+                if exp_date < today:
+                    return jsonify({
+                        "success": False,
+                        "error": "Suscripción expirada",
+                        "message": f"Suscripción expiró: {expiration_date}"
+                    }), 400
+            except ValueError as parse_error:
+                print(f"⚠️ Error al parsear fecha: {parse_error}")
+        
+        # Actualizar rol del usuario
+        upd = supabase.table('User').update({
+            'id_rol': 2,  # Usuario pago
+            'updated_at': datetime.utcnow().isoformat()
+        }).eq('id_user', user_id).execute()
+        
+        print(f"Resultado actualización: {upd.data}")
+        
+        # También actualizar el pago si es necesario
+        supabase.table('payments').update({
+            'status': 'verified',
+            'verified_at': datetime.utcnow().isoformat()
+        }).eq('id', payment['id']).execute()
+        
+        return jsonify({
+            "success": True,
+            "message": "Rol actualizado a pago (id_rol=2)",
+            "user_id": user_id,
+            "payment_id": payment['id'],
+            "expiration_date": expiration_date,
+            "updated_user": upd.data[0] if upd.data else None
+        }), 200
+        
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
+        import traceback
+        print(f"❌ Error en verify_and_upgrade_role: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False, 
+            "error": str(e),
+            "message": "Error procesando la solicitud"
+        }), 500
+    
 
 @historial_bp.route('/transactions', methods=['GET'])
 def transactions():
     limit = request.args.get('limit', type=int)
     result = historial_service.get_all_transactions(limit=limit)
     return jsonify(result), 200 if result.get('success') else 500
-
-@historial_bp.route('/transactions/range', methods=['GET'])
-def transactions_range():
-    start = request.args.get('start')
-    end = request.args.get('end')
-    if not start:
-        return jsonify({'error': 'start date required (YYYY-MM-DD)'}), 400
-    result = historial_service.get_payments_by_date_range(start_date=start, end_date=end)
-    return jsonify(result), 200 if result.get('success') else 500
-
-@historial_bp.route('/last/<string:user_id>', methods=['GET'])
-def last_payment(user_id):
-    result = historial_service.get_user_last_payment(user_id)
-    return jsonify(result), 200 if result.get('success') else 404
-
-@historial_bp.route('/check-expiration/<string:user_id>', methods=['GET'])
-def check_exp(user_id):
-    result = historial_service.check_subscription_expiration(user_id)
-    return jsonify(result), 200
 
 @historial_bp.route('/send-alert', methods=['POST'])
 def send_alert():
@@ -180,5 +289,3 @@ def send_alert():
         return jsonify({'error': 'user_id required'}), 400
     result = historial_service.send_expiration_alert(user_id)
     return jsonify(result), 200 if result.get('success') else 500
-
-
