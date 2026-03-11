@@ -13,7 +13,7 @@ export default function ProtectedRoute({ children }) {
       return;
     }
 
-    fetch('http://localhost:5000/api/token/verify', {
+    fetch('/api/token/verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

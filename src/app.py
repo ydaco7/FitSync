@@ -17,7 +17,7 @@ from routes.verify_token import verify_token
 from datetime import timedelta 
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["https://fitsync-nu.vercel.app"]}})
+CORS(app, origins=["https://fit-sync-gamma.vercel.app"])
 app.config['JWT_SECRET_KEY'] = 'tu_secreto_super_seguro'
 app.config['JWT_TOKEN_LOCATION'] = ['headers', 'json']
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
