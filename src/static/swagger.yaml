@@ -1,0 +1,291 @@
+openapi: 3.0.0
+info:
+  title: FitSync API
+  description: Documentación de los endpoints generada para validar el backend.
+  version: "1.0.0"
+servers:
+  - url: http://127.0.0.1:5000
+    description: Servidor de desarrollo local
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    signupRequest:
+      type: object
+      required: [name, last_name, email, password_encrypted, number]
+      properties:
+        name:
+          type: string
+          example: "Juan"
+        last_name:
+          type: string
+          example: "Pérez"
+        email:
+          type: string
+          example: "juan.perez@gmail.com"
+        password_encrypted:
+          type: string
+          example: "Password123!"
+        number:
+          type: string
+          example: "04141234567"
+    
+    loginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          example: "juan.perez@gmail.com"
+        password:
+          type: string
+          example: "Password123!"
+
+    updateUserRequest:
+      type: object
+      properties:
+        number:
+          type: string
+          example: "04127654321"
+        password_encrypted:
+          type: string
+          example: "NewPassword321!"
+
+    paymentOrderRequest:
+      type: object
+      required: [plan, price, method]
+      properties:
+        plan:
+          type: string
+          example: "Premium Plan"
+        price:
+          type: number
+          example: 29.99
+        method:
+          type: string
+          example: "card"
+        details:
+          type: object
+          properties:
+            simulated:
+              type: boolean
+              example: true
+            last4:
+              type: string
+              example: "4242"
+            cardType:
+              type: string
+              example: "Visa"
+
+paths:
+  /signup:
+    post:
+      summary: Crear nuevo usuario
+      tags: [Autenticación y Usuarios]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/signupRequest'
+      responses:
+        '201':
+          description: Usuario creado exitosamente (retorna user data y access_token)
+        '400':
+          description: Faltan campos, formato inválido, dominio no permitido, contraseña débil
+        '409':
+          description: Correo o número de teléfono ya registrados
+          
+  /Login:
+    post:
+      summary: Iniciar sesión
+      tags: [Autenticación y Usuarios]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/loginRequest'
+      responses:
+        '200':
+          description: Login exitoso (retorna user data y access_token)
+        '401':
+          description: Credenciales inválidas
+
+  /api/user/update/{user_id}:
+    put:
+      summary: Actualizar número de teléfono o contraseña
+      tags: [Autenticación y Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: ID del usuario a modificar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateUserRequest'
+      responses:
+        '200':
+          description: Usuario actualizado con éxito
+        '400':
+          description: Validación de datos fallida
+
+  /api/users:
+    get:
+      summary: Obtener todos los usuarios
+      tags: [Usuarios, Entrenadores, Nutricionistas]
+      responses:
+        '200':
+          description: Lista de usuarios
+          
+  /api/trainer:
+    get:
+      summary: Obtener entrenadores
+      tags: [Usuarios, Entrenadores, Nutricionistas]
+      responses:
+        '200':
+          description: Lista de entrenadores
+
+  /api/nutritionist:
+    get:
+      summary: Obtener nutricionistas
+      tags: [Usuarios, Entrenadores, Nutricionistas]
+      responses:
+        '200':
+          description: Lista de nutricionistas
+
+  /api/plans/:
+    get:
+      summary: Obtener los planes de suscripción
+      tags: [Pagos y Suscripciones]
+      responses:
+        '200':
+          description: Lista de planes activos
+
+  /api/methods/:
+    get:
+      summary: Obtener los métodos de pago
+      tags: [Pagos y Suscripciones]
+      responses:
+        '200':
+          description: Lista de métodos activos
+
+  /api/payments/:
+    post:
+      summary: Crear orden de pago
+      tags: [Pagos y Suscripciones]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/paymentOrderRequest'
+      responses:
+        '200':
+          description: Pago procesado
+
+  /api/my-payments/:
+    get:
+      summary: Obtener pagos del usuario autenticado
+      tags: [Pagos y Suscripciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Historial de pagos
+
+  /api/verify/{user_id}:
+    put:
+      summary: Verificar y actualizar rol de usuario a pago
+      tags: [Pagos y Suscripciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Rol actualizado a pago
+          
+  /api/gallery:
+    get:
+      summary: Listar todas las imágenes en galería
+      tags: [Galería]
+      responses:
+        '200':
+          description: Lista de imágenes
+    post:
+      summary: Subir una imagen
+      tags: [Galería]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Imagen a subir (png, jpg, jpeg, gif)
+                titulo:
+                  type: string
+                  description: Título de la imagen
+      responses:
+        '201':
+          description: Imagen creada
+
+  /api/gallery/{image_id}:
+    put:
+      summary: Reemplazar una imagen
+      tags: [Galería]
+      parameters:
+        - in: path
+          name: image_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                titulo:
+                  type: string
+      responses:
+        '200':
+          description: Imagen actualizada
+    delete:
+      summary: Eliminar una imagen
+      tags: [Galería]
+      parameters:
+        - in: path
+          name: image_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Imagen eliminada
