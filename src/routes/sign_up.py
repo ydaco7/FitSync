@@ -13,7 +13,7 @@ sign_up = Blueprint('sign_up', __name__)
 
 load_dotenv()
 
-@sign_up.route('/', methods=['POST'])
+@sign_up.route('/', methods=['POST'], strict_slashes=False)
 def signnup():
     try:
         data = request.get_json()
@@ -96,11 +96,14 @@ def signnup():
 
         response = supabase.table("User").insert(user_data).execute()
         if response.data:
-            user_id = response.data[0].get('id')
+            user_id = response.data[0].get('id_user')
+            if not user_id:
+                user_id = response.data[0].get('id')  # Fallback
+            
             if not user_id:
                 user_identity = email 
             else:
-                user_identity = user_id
+                user_identity = str(user_id)
  
             access_token = create_access_token(identity=user_identity)
             
